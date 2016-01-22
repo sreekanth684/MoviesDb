@@ -30,7 +30,7 @@ import com.example.sree.moviesdb.data.MoviesDbContract;
 import com.squareup.picasso.Picasso;
 
 /**
- * A placeholder fragment containing a simple view.
+ * A placeholder fragment containing a simple view. ..
  */
 public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
