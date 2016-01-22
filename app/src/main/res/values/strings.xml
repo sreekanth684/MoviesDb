@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">MoviesDb</string>
+    <string name="app_label">mDb</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_detail">MovieDetails</string>
+    <string name="title_activity_review_details">ReviewDetailsActivity</string>
+
+    <string name="pref_sort_label">Sort Preference</string>
+    <string name="pref_sort_key">sortPref</string>
+    <string name="pref_sort_defaultValue">popularity.desc</string>
+    <string-array name="pref_sort_options">
+        <item>Popularity</item>
+        <item>Ratings</item>
+        <item>Favorites</item>
+    </string-array>
+    <string-array name="pref_sort_values">
+        <item>popularity.desc</item>
+        <item>vote_average.desc</item>
+        <item>@string/pref_fav_value</item>
+    </string-array>
+    <string name="pref_fav_value">favorite</string>
+    <string name="movie_rating_append">/10</string>
+    <string name="movie_runtime_append">min</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="detail_menuItem_share">Share</string>
+
+    <string name="detail_trailers_heading">Trailers:</string>
+    <string name="detail_reviews_heading">Reviews By:</string>
+    <string name="detail_plot_heading">Plot:</string>
+    <string name="detail_not_available">Sorry! No info available.</string>
+
+</resources>
