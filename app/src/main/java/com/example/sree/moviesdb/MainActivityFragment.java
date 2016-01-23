@@ -1,8 +1,11 @@
 package com.example.sree.moviesdb;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -11,12 +14,14 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.example.sree.moviesdb.adapters.MyGridMovieItemCursorAdapter;
 import com.example.sree.moviesdb.asyncTasks.GetMoviesTask;
@@ -146,11 +151,26 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             //for now invoking the api call wen there is no data!
             if (cur.moveToFirst())
                 return;
+            //if netwrk nt available suggest user to enable netwrk.
+            if (!isNetworkAvailable()) {
+                Toast t = Toast.makeText(getActivity(), R.string.no_network_msg, Toast.LENGTH_LONG);
+                t.setGravity(Gravity.CENTER, 0, 0);
+                t.show();
+                return;
+            }
+
             //GetMoviesTask moviesTask = new GetMoviesTask(getActivity(), mMoviesAdapter);
             GetMoviesTask moviesTask = new GetMoviesTask(getActivity());
             Log.v(LOG_TAG + ".invokeGetMoviesTask()", "making api call w/ sortPref from SharedPref::" + sortPref);
             moviesTask.execute(sortPref);
         }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     // since we read the sortPref when we create the loader, all we need to do is restart things

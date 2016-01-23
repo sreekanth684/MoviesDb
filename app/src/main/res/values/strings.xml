@@ -29,4 +29,6 @@
     <string name="detail_plot_heading">Plot:</string>
     <string name="detail_not_available">Sorry! No info available.</string>
 
+    <string name="no_network_msg">Internet not available.Please check your network/wifi settings.</string>
+
 </resources>

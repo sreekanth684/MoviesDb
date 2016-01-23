@@ -1,8 +1,11 @@
 package com.example.sree.moviesdb;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -12,6 +15,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,6 +26,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.sree.moviesdb.adapters.MyReviewItemCursorAdapter;
 import com.example.sree.moviesdb.adapters.MyTrailerItemCursorAdapter;
@@ -33,10 +38,6 @@ import com.squareup.picasso.Picasso;
  * A placeholder fragment containing a simple view.
  */
 public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
-
-    private static final String LOG_TAG = DetailActivityFragment.class.getSimpleName();
-    private static final String TRAILER_SHARE_TAG = " #MoviesDbApp";
-    static final String MOVIE_DETAIL_URI = "URI";
 
     //movie indices
     public static final int COL_MOVIE_ROW_ID = 0;
@@ -54,7 +55,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     //review indices
     public static final int COL_REVIEW_AUTHOR = 1;
     public static final int COL_REVIEW_CONTENT = 2;
-
+    static final String MOVIE_DETAIL_URI = "URI";
+    private static final String LOG_TAG = DetailActivityFragment.class.getSimpleName();
+    private static final String TRAILER_SHARE_TAG = " #MoviesDbApp";
     //loaders
     private static final int MOVIE_DETAIL_LOADER = 4;
     private static final int MOVIE_TRAILER_LOADER = 6;
@@ -161,7 +164,14 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             //check movie to see if it has originalTitle, if it is null that means we dont have data fr movie/trailer/reviews
             //so shall make a api call.
             if (movieCur.moveToFirst() && movieCur.getString(COL_MOVIE_ORG_TITLE) == null) {
-                invokeGetMovieDetailsTask(String.valueOf(movieCur.getLong(COL_MOVIE_ROW_ID)), movieCur.getString(COL_MOVIE_ID));
+                if (!isNetworkAvailable()) {
+                    Toast t = Toast.makeText(getActivity(), R.string.no_network_msg, Toast.LENGTH_LONG);
+                    t.setGravity(Gravity.CENTER, 0, 0);
+                    t.show();
+                    mDetailFrag.setVisibility(View.INVISIBLE);
+                } else {
+                    invokeGetMovieDetailsTask(String.valueOf(movieCur.getLong(COL_MOVIE_ROW_ID)), movieCur.getString(COL_MOVIE_ID));
+                }
             }
 
             //movie details ui elements
@@ -213,6 +223,13 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         GetMovieDetailsTaskFrCursors asyncTask = new GetMovieDetailsTaskFrCursors(getActivity());
         Log.v(LOG_TAG + ".invokeAsyncTask()", "movieRowId & movieId::" + movieRowId + "&" + movieId);
         asyncTask.execute(movieRowId, movieId);
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     private void updateReviewsLinearLayout() {
@@ -269,7 +286,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         Uri movieWithRowIdUri = intent.getData();*/
 
         Uri movieWithRowIdUri = mMovieUri;
-        if(movieWithRowIdUri == null)
+        if (movieWithRowIdUri == null)
             return null;
         String movieRowId = MoviesDbContract.MovieEntry.getMovieRowIdFromUri(movieWithRowIdUri);
         Log.d(LOG_TAG + ".onCreateLoader()", " intent data uri-" + movieWithRowIdUri);
@@ -309,44 +326,52 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                         mRatingTextView.setText(rating + getActivity().getString(R.string.movie_rating_append));
                     if (runtime != null)
                         mRuntimeTextView.setText(runtime + getActivity().getString(R.string.movie_runtime_append));
-                    if (plot == null || plot.isEmpty()) {
-                        mOverviewTextView.setText(getString(R.string.detail_not_available));
-                    } else {
-                        mOverviewTextView.setText(plot);
-                    }
-                    if (imageUrl == null || imageUrl.equalsIgnoreCase("null") || imageUrl.isEmpty()) {
-                        mPosterImageView.setImageResource(R.mipmap.no_image);
-                    } else {
-                        Picasso.with(getActivity()).load("http://image.tmdb.org/t/p/w92" + imageUrl).into(mPosterImageView);
-                    }
-                    if (isFav == 1)
-                        mFavButton.setImageResource(R.mipmap.fav_yes);
-                    else
-                        mFavButton.setImageResource(R.mipmap.fav_no);
-                    mFavButton.setTag(data);
-                    mFavButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            Cursor movieCursor = (Cursor) v.getTag();
-                            String movieRowId = String.valueOf(movieCursor.getLong(COL_MOVIE_ROW_ID));
-                            int isFav = movieCursor.getInt(COL_MOVIE_IS_FAV);
-                            Log.d(LOG_TAG + ".onClick()", "fav button clicked fr movieId-" + movieRowId);
-                            ContentValues value = new ContentValues();
-                            if (isFav == 1) {
-                                value.put(MoviesDbContract.MovieEntry.COLUMN_MOVIE_IS_FAV, 0);
-                                mFavButton.setImageResource(R.mipmap.fav_no);
-                            } else {
-                                value.put(MoviesDbContract.MovieEntry.COLUMN_MOVIE_IS_FAV, 1);
-                                mFavButton.setImageResource(R.mipmap.fav_yes);
-                            }
-                            getActivity().getContentResolver().update(MoviesDbContract.MovieEntry.CONTENT_URI, value, MoviesDbContract.MovieEntry._ID + " = ? ", new String[]{movieRowId});
 
+                    if (mOverviewTextView != null) {
+                        if (plot == null || plot.isEmpty()) {
+                            mOverviewTextView.setText(getString(R.string.detail_not_available));
+                        } else {
+                            mOverviewTextView.setText(plot);
                         }
-                    });
+                    }
+                    if (mPosterImageView != null) {
+                        if (imageUrl == null || imageUrl.equalsIgnoreCase("null") || imageUrl.isEmpty()) {
+                            mPosterImageView.setImageResource(R.mipmap.no_image);
+                        } else {
+                            Picasso.with(getActivity()).load("http://image.tmdb.org/t/p/w92" + imageUrl).into(mPosterImageView);
+                        }
+                    }
+                    if (mFavButton != null) {
+                        if (isFav == 1)
+                            mFavButton.setImageResource(R.mipmap.fav_yes);
+                        else
+                            mFavButton.setImageResource(R.mipmap.fav_no);
+                        mFavButton.setTag(data);
+                        mFavButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Cursor movieCursor = (Cursor) v.getTag();
+                                String movieRowId = String.valueOf(movieCursor.getLong(COL_MOVIE_ROW_ID));
+                                int isFav = movieCursor.getInt(COL_MOVIE_IS_FAV);
+                                Log.d(LOG_TAG + ".onClick()", "fav button clicked fr movieId-" + movieRowId);
+                                ContentValues value = new ContentValues();
+                                if (isFav == 1) {
+                                    value.put(MoviesDbContract.MovieEntry.COLUMN_MOVIE_IS_FAV, 0);
+                                    mFavButton.setImageResource(R.mipmap.fav_no);
+                                } else {
+                                    value.put(MoviesDbContract.MovieEntry.COLUMN_MOVIE_IS_FAV, 1);
+                                    mFavButton.setImageResource(R.mipmap.fav_yes);
+                                }
+                                getActivity().getContentResolver().update(MoviesDbContract.MovieEntry.CONTENT_URI, value, MoviesDbContract.MovieEntry._ID + " = ? ", new String[]{movieRowId});
+
+                            }
+                        });
+                    }
 
                 }
                 return;
             case 6:
+
                 mTrailerItemCursorAdapter.swapCursor(data);
                 //updating share intent provider
                 if (data != null && data.moveToFirst()) {
