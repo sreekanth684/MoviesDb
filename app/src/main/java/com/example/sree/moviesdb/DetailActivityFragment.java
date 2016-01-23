@@ -30,7 +30,7 @@ import com.example.sree.moviesdb.data.MoviesDbContract;
 import com.squareup.picasso.Picasso;
 
 /**
- * A placeholder fragment containing a simple view. ..
+ * A placeholder fragment containing a simple view.
  */
 public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -142,12 +142,16 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
 
         //sP: after using loaders/cursors
-        mDetailFrag = inflater.inflate(R.layout.fragment_detail, container, false);
+
         //sP:using bundle args to get uri info for supporting 2 pane mode.
         //Intent intent = getActivity().getIntent();
         Bundle arguments = getArguments();
 
         if (arguments != null && null != arguments.getParcelable(DetailActivityFragment.MOVIE_DETAIL_URI)) {
+            //sP:inflating only when there is data. to fix 2pane bug of blank view.
+            mDetailFrag = inflater.inflate(R.layout.fragment_detail, container, false);
+
+
             //Uri movieWithRowIdUri = intent.getData();
             mMovieUri = arguments.getParcelable(DetailActivityFragment.MOVIE_DETAIL_URI);
             Uri movieWithRowIdUri = mMovieUri;
